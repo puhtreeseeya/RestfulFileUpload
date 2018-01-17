@@ -1,16 +1,10 @@
 package mediamath.parser;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.StringWriter;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -32,7 +26,7 @@ import com.google.gson.GsonBuilder;
 public class UploadFileService {
 	
 	static final String BANNED_WORD = "blue"; 
-	static ParsedFileList list = new ParsedFileList(); 
+	static List<ParsedFile> parsedFileList = new ArrayList<ParsedFile>();  
 	
 	@POST
 	@Path("/upload")
@@ -48,9 +42,10 @@ public class UploadFileService {
 		} catch(IOException e) {
 			e.printStackTrace(); 
 		}
-		String theString = writer.toString();
-		String jsonString = parseInput(theString); 
-		return Response.status(200).entity(jsonString).build();
+		String input = writer.toString();
+		ParsedFile parsedFile = new ParsedFile(input, "blue"); 
+		String output = parsedFile.toJsonString();  
+		return Response.status(200).entity(output).build();
 		
 	}
 	
@@ -62,7 +57,7 @@ public class UploadFileService {
 		int id = Integer.parseInt(fileId); 
 		ParsedFile file;  
 		try {
-			file = list.getParsedFile(id);
+			file = parsedFileList.get(id); 
 		} catch(IndexOutOfBoundsException e) {
 			String jsonString = gson.toJson(null);
 			return jsonString;  
@@ -70,29 +65,5 @@ public class UploadFileService {
 		String jsonString = gson.toJson(file); 
 		return jsonString; 
 	}
-	
-	public String parseInput(String input) {
-		Map<String, Integer> map = new HashMap<String, Integer>();
-		String str = input.replaceAll("[^A-Za-z]", " "); 
-		String[] arr = str.split("\\s+");  
-		int total = 0; 
-		for(int i=0; i<arr.length; i++) {
-			if(map.get(arr[i]) == null && !arr[i].contains(BANNED_WORD)) {
-				total++; 
-				map.put(arr[i], 1); 
-			} else if(!arr[i].contains(BANNED_WORD)) {
-				total++; 
-				map.put(arr[i], map.get(arr[i])+1); 		
-			}
-		}
-		ParsedFile parsedFile = new ParsedFile(total, map); 
-		list.addParsedFile(parsedFile);	
-		Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-		String jsonString = gson.toJson(parsedFile);
-		System.out.println(jsonString);
-		
-		return jsonString; 
-	}
-	
 	
 }
